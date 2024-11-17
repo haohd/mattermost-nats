@@ -195,6 +195,12 @@ type webSocketEventJSON struct {
 	Sequence  int64               `json:"seq"`
 }
 
+// Event to broadcast to NATS
+type natsWebSocketEventJSON struct {
+	webSocketEventJSON
+	NodeID string `json:"node_id"`
+}
+
 type WebSocketEvent struct {
 	event           WebsocketEventType
 	data            map[string]any
@@ -432,4 +438,30 @@ func (m *WebSocketResponse) ToJSON() ([]byte, error) {
 func WebSocketResponseFromJSON(data io.Reader) (*WebSocketResponse, error) {
 	var o *WebSocketResponse
 	return o, json.NewDecoder(data).Decode(&o)
+}
+
+func (ev *WebSocketEvent) ToNatsEvent(nodeID string) ([]byte, error) {
+	return json.Marshal(natsWebSocketEventJSON{
+		webSocketEventJSON: webSocketEventJSON{
+			ev.event,
+			ev.data,
+			ev.broadcast,
+			ev.sequence,
+		},
+		NodeID: nodeID,
+	})
+}
+
+func NatsEventToWebSocketEvent(data []byte) (*WebSocketEvent, string, error) {
+	var event natsWebSocketEventJSON
+	err := json.Unmarshal(data, &event)
+	if err != nil {
+		return nil, "", err
+	}
+	return &WebSocketEvent{
+		event:     event.Event,
+		data:      event.Data,
+		broadcast: event.Broadcast,
+		sequence:  -1,
+	}, event.NodeID, nil
 }

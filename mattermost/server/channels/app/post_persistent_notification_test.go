@@ -198,8 +198,7 @@ func TestSendPersistentNotifications(t *testing.T) {
 	th := Setup(t).InitBasic()
 	defer th.TearDown()
 
-	_, appErr := th.App.AddUserToChannel(th.Context, th.BasicUser2, th.BasicChannel, false)
-	require.Nil(t, appErr)
+	th.App.AddUserToChannel(th.Context, th.BasicUser2, th.BasicChannel, false)
 
 	s := "Urgent"
 	tr := true
@@ -214,7 +213,7 @@ func TestSendPersistentNotifications(t *testing.T) {
 			},
 		},
 	}
-	_, appErr = th.App.CreatePost(th.Context, p1, th.BasicChannel, model.CreatePostFlags{})
+	_, appErr := th.App.CreatePost(th.Context, p1, th.BasicChannel, model.CreatePostFlags{})
 	require.Nil(t, appErr)
 
 	err := th.App.SendPersistentNotifications()

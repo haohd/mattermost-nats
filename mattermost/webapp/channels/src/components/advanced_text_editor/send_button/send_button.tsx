@@ -72,7 +72,7 @@ const SendButton = ({disabled, handleSubmit, channelId}: SendButtonProps) => {
                 disabled={disabled}
             >
                 <button
-                    className={classNames('SendMessageButton', {disabled}, {singleAction: !isScheduledPostEnabled})}
+                    className={classNames('SendMessageButton', {disabled})}
                     data-testid='SendMessageButton'
                     tabIndex={0}
                     aria-label={formatMessage({

@@ -16,11 +16,18 @@ import (
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
 	"github.com/mattermost/mattermost/server/public/shared/request"
 	"github.com/mattermost/mattermost/server/v8/channels/store"
+	"github.com/mattermost/mattermost/server/v8/mmnats"
+	"github.com/nats-io/nats.go"
 )
 
 const (
 	broadcastQueueSize         = 4096
 	inactiveConnReaperInterval = 5 * time.Minute
+	natsSubject                = "/event/socket"
+)
+
+var (
+	mattermostNodeId = fmt.Sprintf("MM-%s", model.NewRandomString(12))
 )
 
 type SuiteIFace interface {
@@ -397,6 +404,35 @@ func (h *Hub) Start() {
 	var doRecoverableStart func()
 	var doRecover func()
 
+	// HaoHoang
+	var pub mmnats.Publisher
+	natsConn := mmnats.NatsConnection()
+	if natsConn != nil {
+		pub = mmnats.NewPublisher(natsConn)
+		sub := mmnats.NewSubscriber(natsConn)
+		err := sub.Subscribe(
+			natsSubject,
+			model.NewRandomString(12),
+			func(m *nats.Msg) error {
+				msg, sourceNodeID, err := model.NatsEventToWebSocketEvent(m.Data)
+				if err != nil {
+					mlog.Warn("Failed to translate NATS event", mlog.Err(err))
+					return nil
+				}
+
+				// Need to check and ignore loopback event
+				if sourceNodeID != mattermostNodeId {
+					mlog.Info("Got NATS event from node:", mlog.String("nodeID", sourceNodeID))
+					fmt.Printf("\n===> Got NATS event from node: %v\n", sourceNodeID)
+					h.broadcast <- msg
+				}
+				return nil
+			}, true)
+		if err != nil {
+			mlog.Error("Failed to subscribe NATS event", mlog.Err(err))
+		}
+	}
+
 	doStart = func() {
 		mlog.Debug("Hub is starting", mlog.Int("index", h.connectionIndex))
 
@@ -551,6 +587,13 @@ func (h *Hub) Start() {
 					closeAndRemoveConn(connIndex, directMsg.conn)
 				}
 			case msg := <-h.broadcast:
+				if pub != nil && msg.GetSequence() >= 0 {
+					b, err := msg.ToNatsEvent(mattermostNodeId)
+					if err == nil {
+						_ = pub.Publish(natsSubject, b)
+					}
+				}
+
 				if metrics := h.platform.metricsIFace; metrics != nil {
 					metrics.DecrementWebSocketBroadcastBufferSize(strconv.Itoa(h.connectionIndex), 1)
 				}
@@ -565,6 +608,7 @@ func (h *Hub) Start() {
 						return
 					}
 					if webConn.ShouldSendEvent(msg) {
+						fmt.Printf("[WEBSOCKET]: broadcast message to user: %v\n", webConn.UserId)
 						select {
 						case webConn.send <- h.runBroadcastHooks(msg, webConn, broadcastHooks, broadcastHookArgs):
 						default:

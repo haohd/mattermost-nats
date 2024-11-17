@@ -1,0 +1,93 @@
+version: '3.4'
+
+services:
+  postgres:
+    image: postgres
+    container_name: mm-postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=mattermost_test
+    ports:
+      - '5432:5432'
+    volumes:
+      - ./postgres.conf:/etc/postgresql/postgresql.conf
+      - ./volumes/mattermost-db:/var/lib/postgresql/data
+    networks:
+      - network
+
+  nats:
+    image: nats:alpine
+    container_name: mm-nats
+    command: -c /etc/nats/nats.conf
+    ports:
+      - "4222:4222" # client port
+      - "6222:6222" # cluster port
+      - "8222:8222" # monitoring port
+    volumes:
+      - ./nats.conf:/etc/nats/nats.conf
+      - ./volumes/nats/data:/data
+    networks:
+      - network
+
+  nginx:
+    image: nginx
+    container_name: nginx
+    build:
+      context: ./nginx
+      dockerfile: ./Dockerfile
+    ports:
+      - 80:80
+    depends_on:
+      - mm
+    networks:
+      - network
+
+  mm:
+    #image: mattermost/${MATTERMOST_IMAGE}:${MATTERMOST_IMAGE_TAG}
+    image: mattermost-nats
+    env_file:
+      - .env
+    #ports:
+    #  - 8065:8065
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 200
+    read_only: ${MATTERMOST_CONTAINER_READONLY}
+    tmpfs:
+      - /tmp
+    deploy:
+      replicas: 2
+    volumes:
+      - ${MATTERMOST_CONFIG_PATH}:/mattermost/config:rw
+      - ${MATTERMOST_DATA_PATH}:/mattermost/data:rw
+      - ${MATTERMOST_LOGS_PATH}:/mattermost/logs:rw
+      - ${MATTERMOST_PLUGINS_PATH}:/mattermost/plugins:rw
+      - ${MATTERMOST_CLIENT_PLUGINS_PATH}:/mattermost/client/plugins:rw
+      - ${MATTERMOST_BLEVE_INDEXES_PATH}:/mattermost/bleve-indexes:rw
+      # When you want to use SSO with GitLab, you have to add the cert pki chain of GitLab inside Alpine
+      # to avoid Token request failed: certificate signed by unknown authority
+      # (link: https://github.com/mattermost/mattermost-server/issues/13059 and https://github.com/mattermost/docker/issues/34)
+      # - ${GITLAB_PKI_CHAIN_PATH}:/etc/ssl/certs/pki_chain.pem:ro
+    environment:
+      # timezone inside container
+      - TZ
+
+      # necessary Mattermost options/variables (see env.example)
+      - MM_SQLSETTINGS_DRIVERNAME
+      - MM_SQLSETTINGS_DATASOURCE
+
+      # necessary for bleve
+      - MM_BLEVESETTINGS_INDEXDIR
+
+      # additional settings
+      - MM_SERVICESETTINGS_SITEURL
+      - MM_SERVICESETTINGS_ENABLELOCALMODE
+    depends_on:
+      - postgres
+      - nats
+    networks:
+      - network
+
+networks:
+  network:

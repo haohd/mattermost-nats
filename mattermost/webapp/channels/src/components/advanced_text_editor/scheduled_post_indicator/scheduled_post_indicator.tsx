@@ -34,8 +34,7 @@ export default function ScheduledPostIndicator({location, channelId, postId, rem
     // else, get those for the channel.
     // Fetch scheduled posts for the thread when opening a thread, and fetch for channel
     // when opening from center channel.
-    const isThread = location === Locations.RHS_COMMENT;
-    const id = isThread ? postId : channelId;
+    const id = location === Locations.RHS_COMMENT ? postId : channelId;
     const scheduledPostData = useSelector((state: GlobalState) => showChannelOrThreadScheduledPostIndicator(state, id));
 
     const currentTeamName = useSelector((state: GlobalState) => getCurrentTeam(state)?.name);
@@ -78,18 +77,10 @@ export default function ScheduledPostIndicator({location, channelId, postId, rem
 
     // display scheduled post count if there are more than one scheduled post
     if (scheduledPostData.count > 1) {
-        scheduledPostText = isThread ? (
+        scheduledPostText = (
             <FormattedMessage
-                id='scheduled_post.channel_indicator.multiple_in_thread'
-                defaultMessage='{count} scheduled messages in thread.'
-                values={{
-                    count: scheduledPostData.count,
-                }}
-            />
-        ) : (
-            <FormattedMessage
-                id='scheduled_post.channel_indicator.multiple_in_channel'
-                defaultMessage='{count} scheduled messages in channel.'
+                id='scheduled_post.channel_indicator.multiple'
+                defaultMessage='You have {count} scheduled messages.'
                 values={{
                     count: scheduledPostData.count,
                 }}
@@ -107,7 +98,7 @@ export default function ScheduledPostIndicator({location, channelId, postId, rem
             <Link to={scheduledPostLinkURL}>
                 <FormattedMessage
                     id='scheduled_post.channel_indicator.link_to_scheduled_posts.text'
-                    defaultMessage='See all.'
+                    defaultMessage='See all scheduled messages'
                 />
             </Link>
         </div>

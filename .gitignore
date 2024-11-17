@@ -1,0 +1,4 @@
+/test/volumes/app
+/test/volumes/nats
+/test/volumes/mattermost-db
+/test/build/mattermost-team*

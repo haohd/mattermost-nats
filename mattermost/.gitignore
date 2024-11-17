@@ -157,3 +157,7 @@ docker-compose.override.yaml
 ## Notice Folders
 .notice/
 .notice-work/
+
+/server/bin/*
+/server/build/*.tar.gz
+/server/dist

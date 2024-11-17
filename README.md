@@ -1,1 +1,3 @@
-# mattermost-nats
+# Mattermost NATS
+
+

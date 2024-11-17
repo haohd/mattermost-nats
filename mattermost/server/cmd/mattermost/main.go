@@ -7,6 +7,8 @@ import (
 	"os"
 
 	"github.com/mattermost/mattermost/server/v8/cmd/mattermost/commands"
+	"github.com/mattermost/mattermost/server/v8/mmnats"
+
 	// Import and register app layer slash commands
 	_ "github.com/mattermost/mattermost/server/v8/channels/app/slashcommands"
 	// Plugins
@@ -17,6 +19,11 @@ import (
 )
 
 func main() {
+	natsConn := mmnats.NatsConnection()
+	if natsConn != nil {
+		defer natsConn.Close()
+	}
+
 	if err := commands.Run(os.Args[1:]); err != nil {
 		os.Exit(1)
 	}
