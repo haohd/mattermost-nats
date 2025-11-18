@@ -29,6 +29,18 @@ usage() {
 #     popd
 # }
 
+build_mm() {
+    pushd ../mattermost/server
+    #go get github.com/samber/lo
+    #go get github.com/kelseyhightower/envconfig
+    #go get github.com/nats-io/nats.go@v1.34.0
+
+    make build
+    make package
+    cp dist/mattermost-team-linux-amd64.tar.gz ./build/
+    popd
+}
+
 build_docker() {
     pushd ./build
     cp -f ../../mattermost/server/dist/mattermost-team-linux-amd64.tar.gz ./
@@ -39,6 +51,9 @@ build_docker() {
 execute() {
     local task=${1}
     case ${task} in
+        build-mm)
+            build_mm
+            ;;
         build)
             pushd ../mattermost/server
             go get github.com/samber/lo

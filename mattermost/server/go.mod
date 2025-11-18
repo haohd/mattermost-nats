@@ -4,6 +4,8 @@ go 1.22.0
 
 toolchain go1.22.6
 
+replace code.sajari.com/docconv/v2 => ../../deps/docconv
+
 require (
 	code.sajari.com/docconv/v2 v2.0.0-pre.4
 	github.com/Masterminds/semver/v3 v3.2.1
