@@ -55,15 +55,7 @@ execute() {
             build_mm
             ;;
         build)
-            pushd ../mattermost/server
-            go get github.com/samber/lo
-            go get github.com/kelseyhightower/envconfig
-            go get github.com/nats-io/nats.go@v1.34.0
-
-            make build
-            make package
-            cp dist/mattermost-team-linux-amd64.tar.gz ./build/
-            popd
+            build_mm
             build_docker
             ;;
         build-docker)
